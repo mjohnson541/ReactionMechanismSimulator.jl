@@ -7,7 +7,7 @@ if PyCall.pyversion.major != 3 || PyCall.pyversion.minor != 7
     Conda.add("python==3.7")
     Conda.clean()
     Conda.update()
-    Conda.add("rmg=3.0.0")
+    Conda.add("rmg")
     Conda.clean()
     Conda.update()
     Pkg.build("PyCall")

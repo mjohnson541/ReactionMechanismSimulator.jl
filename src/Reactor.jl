@@ -5,7 +5,7 @@ using Sundials
 abstract type AbstractReactor end
 export AbstractReactor
 
-struct Reactor{D<:AbstractDomain,Q} <: AbstractReactor
+struct Reactor{D,Q} <: AbstractReactor
     domain::D
     ode::ODEProblem
     recommendedsolver::Q

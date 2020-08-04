@@ -458,6 +458,8 @@ export ParametrizedPDomain
     V::W
     kfs::Array{W,1}
     krevs::Array{W,1}
+    kfsnondiff::Array{W,1}
+    krevsnondiff::Array{W,1}
     efficiencyinds::Array{I,1}
     Gs::Array{W,1}
     rxnarray::Array{Int64,2}
@@ -516,7 +518,9 @@ function ConstantTVDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arr
     P = 1.0e9  #essentiallly assuming this is a liquid
     C = N/V
     kfs,krevs = getkfkrevs(phase=phase,T=T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=diffs,V=V)
-    p = vcat(Gs,kfs)
+    kfsnondiff = getkfs(phase,T,P,C,ns,V)
+    krevsnondiff = @fastmath kfsnondiff./getKcs(phase,T,Gs)
+    p = vcat(Gs,kfsnondiff)
     if sparse
         jacobian=zeros(typeof(T),length(phase.species),length(phase.species))
     else
@@ -524,7 +528,7 @@ function ConstantTVDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arr
     end
     rxnarray = getreactionindices(phase)
     return ConstantTVDomain(phase,SVector(phase.species[1].index,phase.species[end].index),constspcinds,
-        T,V,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
+        T,V,kfs,krevs,kfsnondiff,krevsnondiff,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantTVDomain
 

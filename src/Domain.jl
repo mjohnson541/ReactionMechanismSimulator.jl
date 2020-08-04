@@ -702,8 +702,13 @@ end
     V = y[d.indexes[3]]
     cs = ns./V
     C = N/V
-    @views kfps = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
-    @views nothermochg= d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    if !d.alternativepformat
+        @views kfps = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+        @views nothermochg= d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    else 
+        kfps = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+        nothermochg= d.Gs == d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    end
     @views nokfchg = count(d.kfs .!= kfps) <= length(d.efficiencyinds) && all(kfps[d.efficiencyinds] .== 1.0)
     if nothermochg && nokfchg
         for ind in d.efficiencyinds #efficiency related rates may have changed
@@ -717,8 +722,12 @@ end
         end
         return ns,cs,d.T,d.P,V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
     else #need to handle thermo changes
-        d.kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
-        d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        d.kfs .= kfps
+        if !d.alternativepformat
+            d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        else
+            d.Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        end
         krevs = getkfkrevs(;phase=d.phase,T=d.T,P=d.P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=V,kfs=d.kfs)[2]
         for ind in d.efficiencyinds #efficiency related rates may have changed
             d.kfs[ind],d.krevs[ind] = getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,d.Gs,d.diffusivity,V;f=kfps[ind])
@@ -737,8 +746,13 @@ end
     V = y[d.indexes[3]]
     cs = ns./V
     C = N/V
-    kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    if !d.alternativepformat
+        kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    else 
+        kfs = convert(typeof(y),d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    end
     krevs = convert(typeof(y),getkfkrevs(;phase=d.phase,T=d.T,P=d.P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=V,kfs=kfs)[2])
     for ind in d.efficiencyinds #efficiency related rates may have changed
         kfs[ind],krevs[ind] = getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,Gs,d.diffusivity,V;f=kfs[ind])
@@ -756,8 +770,13 @@ end
     V = y[d.indexes[3]]
     cs = ns./V
     C = N/V
-    kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    if !d.alternativepformat
+        kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    else 
+        kfs = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+    end
     krevs = getkfkrevs(;phase=d.phase,T=d.T,P=d.P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=V,kfs=kfs)[2]
     for ind in d.efficiencyinds #efficiency related rates may have changed
         kfs[ind],krevs[ind] = getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,Gs,d.diffusivity,V;f=kfs[ind])
@@ -775,8 +794,13 @@ end
     V = y[d.indexes[3]]
     cs = ns./V
     C = N/V
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    kfs = [ind in d.efficiencyinds ? getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,Gs,d.diffusivity,V)[1]*p[d.parameterindexes[1]-1+length(d.phase.species)+ind] : p[d.parameterindexes[1]-1+length(d.phase.species)+ind] for ind in 1:length(d.phase.reactions)]
+    if !d.alternativepformat
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = [ind in d.efficiencyinds ? getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,Gs,d.diffusivity,V)[1]*p[d.parameterindexes[1]-1+length(d.phase.species)+ind] : p[d.parameterindexes[1]-1+length(d.phase.species)+ind] for ind in 1:length(d.phase.reactions)]
+    else 
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = [ind in d.efficiencyinds ? getkfkrev(d.phase.reactions[ind],d.phase,d.T,d.P,C,N,ns,Gs,d.diffusivity,V)[1]*d.p[length(d.phase.species)+ind]*p[d.parameterindexes[1]-1+length(d.phase.species)+ind] : p[d.parameterindexes[1]-1+length(d.phase.species)+ind] for ind in 1:length(d.phase.reactions)]
+    end
     krevs = getkfkrevs(;phase=d.phase,T=d.T,P=d.P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=V,kfs=kfs)[2]
     return ns,cs,d.T,d.P,V,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end
@@ -1329,15 +1353,28 @@ end
     cs = ns./d.V
     C = N/d.V
     P = 1.0e9
-    @views nothermochg = d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    if nothermochg
-        return ns,cs,d.T,P,d.V,C,N,d.mu,p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+    if !d.alternativepformat
+        @views nothermochg = d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        if nothermochg
+            return ns,cs,d.T,P,d.V,C,N,d.mu,p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        else
+            d.kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+            d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+            d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
+            return ns,cs,d.T,P,d.V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        end
     else
-        d.kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
-        d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-        d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
-        return ns,cs,d.T,P,d.V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        @views nothermochg = d.Gs == d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        if nothermochg
+            return ns,cs,d.T,P,d.V,C,N,d.mu,d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        else
+            d.kfs = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+            d.Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+            d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
+            return ns,cs,d.T,P,d.V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        end
     end
+        
 end
 
 @inline function calcthermo(d::ConstantTVDomain{W,Y},y::Array{W2,1},t::Q,p::Q2=DiffEqBase.NullParameters()) where {W2<:ForwardDiff.Dual,Q2,W<:IdealDiluteSolution,Y<:Integer,J<:AbstractArray,Q<:Real} #autodiff y
@@ -1350,8 +1387,13 @@ end
     cs = ns./d.V
     C = N/d.V
     P = 1.0e9
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    if !d.alternativepformat
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    else 
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = convert(typeof(y),d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    end
     krevs = convert(typeof(y),getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfs)[2])
     return ns,cs,d.T,P,d.V,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end
@@ -1366,8 +1408,13 @@ end
     cs = ns./d.V
     C = N/d.V
     P = 1.0e9
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+    if !d.alternativepformat
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+    else 
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]    
+    end
     krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfs)[2]
     return ns,cs,d.T,P,d.V,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end
@@ -1396,14 +1443,26 @@ end
     cs = ns./d.A
     C = N/d.A
     P = 0.0
-    @views nothermochg = d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    if nothermochg
-        return ns,cs,d.T,P,d.A,C,N,d.mu,p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
-    else
-        d.kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
-        d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-        d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
-        return ns,cs,d.T,P,d.A,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+    if !d.alternativepformat
+        @views nothermochg = d.Gs == p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        if nothermochg
+            return ns,cs,d.T,P,d.A,C,N,d.mu,p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        else
+            d.kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+            d.Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+            d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
+            return ns,cs,d.T,P,d.A,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        end
+    else 
+        @views nothermochg = d.Gs == d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        if nothermochg
+            return ns,cs,d.T,P,d.A,C,N,d.mu,d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        else
+            d.kfs = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+            d.Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+            d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
+            return ns,cs,d.T,P,d.A,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+        end
     end
 end
 
@@ -1417,8 +1476,13 @@ end
     cs = ns./d.A
     C = N/d.A
     P = 0.0
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    if !d.alternativepformat
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = convert(typeof(y),p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    else 
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = convert(typeof(y),d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)])
+    end
     krevs = convert(typeof(y),getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfs)[2])
     return ns,cs,d.T,P,d.V,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end
@@ -1433,8 +1497,13 @@ end
     cs = ns./d.A
     C = N/d.A
     P = 0.0
-    Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
-    kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+    if !d.alternativepformat
+        Gs = p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+    else 
+        Gs = d.p[1:length(d.phase.species)].+p[d.parameterindexes[1]-1+1:d.parameterindexes[1]-1+length(d.phase.species)]
+        kfs = d.p[length(d.phase.species)+1:end].*p[d.parameterindexes[1]-1+length(d.phase.species)+1:d.parameterindexes[1]-1+length(d.phase.species)+length(d.phase.reactions)]
+    end
     krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfs)[2]
     return ns,cs,d.T,P,d.A,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end

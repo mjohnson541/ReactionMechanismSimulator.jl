@@ -30,6 +30,80 @@ function Reactor(domain::T,y0::Array{W,1},tspan::Tuple,interfaces::Z=[];p::X=Dif
     end
     return Reactor(domain,ode,recsolver,forwardsensitivities)
 end
+function Reactor(domains::T,y0s::W,tspan::W2,interfaces::Z=[],ps::X=DiffEqBase.NullParameters();forwardsensitivities=false) where {T<:Tuple,W,Z<:AbstractArray,X,W2}
+    #adjust indexing
+    y0 = zeros(sum(length(y) for y in y0s))
+    Nvars = 0
+    for domain in domains
+        Nvars += domain.indexes[end]
+    end
+    n = Nvars
+    k = 1
+    for (j,domain) in enumerate(domains)
+        Nspcs = length(domain.phase.species)
+        Ntherm = length(domain.indexes) - 2
+        for i = 1:6, j = 1:size(domain.rxnarray)[2]
+            if domain.rxnarray[i,j] != 0
+                domain.rxnarray[i,j] += k-1
+            end
+        end
+        domain.indexes[1] = k
+        k += Nspcs
+        domain.indexes[2] = k-1
+        y0[domain.indexes[1]:domain.indexes[2]] = y0s[j][1:Nspcs]
+        for m = 3:2+Ntherm
+            domain.indexes[m] = n
+            y0[n] = y0s[j][Nspcs+m-2]
+            n -= 1
+        end
+    end
+    
+    p = Array{Float64,1}()
+    phases = []
+    phaseinds = Array{Tuple,1}()
+    for (i,domain) in enumerate(domains)
+        if domain.phase in phases
+            ind = findfirst(phases.==domain.phase)
+            domain.parameterindexes[1] = phaseinds[ind][1]
+            domain.parameterindexes[2] = phaseinds[ind][2]
+            ds = findall(x->x.phase==domain.phase,domains)
+            if any(.!isa.(ds,AbstractConstantKDomain)) && any(isa.(ds,AbstractConstantKDomain)) #handle different p formats for the same phase
+                for d in ds
+                    if !isa(d,AbstractConstantKDomain)
+                        p[domain.parameterindexes[1]:domain.parameterindexes[2]] .= domain.p
+                    end
+                    break
+                end
+                for d in ds
+                    if isa(d,AbstractConstantKDomain)
+                        d.alternativepformat = true
+                    end
+                end
+            end
+        else 
+            domain.parameterindexes[1] = length(p)+1
+            domain.parameterindexes[2] = length(p)+length(ps[i])
+            push!(phaseinds,(length(p)+1,length(p)+length(ps[i])))
+            push!(phases,domain.phase)
+            p = vcat(p,ps[i])
+        end
+    end
+    
+    dydt(dy::X,y::T,p::V,t::Q) where {X,T,Q<:Real,V} = dydtreactor!(dy,y,t,domains,interfaces,p=p)
+    jacy!(J::Q2,y::T,p::V,t::Q) where {Q2,T,Q<:Real,V} = jacobiany!(J,y,p,t,domains,interfaces,nothing)
+    jacp!(J::Q2,y::T,p::V,t::Q) where {Q2,T,Q<:Real,V} = jacobianp!(J,y,p,t,domains,interfaces,nothing)
+
+    odefcn = ODEFunction(dydt;paramjac=jacp!)
+
+    if forwardsensitivities
+        ode = ODEForwardSensitivityProblem(odefcn,y0,tspan,p)
+        recsolver = Sundials.CVODE_BDF(linear_solver=:GMRES)
+    else
+        ode = ODEProblem(odefcn,y0,tspan,p)
+        recsolver  = Sundials.CVODE_BDF()
+    end
+    return Reactor(domains,ode,recsolver,forwardsensitivities),y0,p
+end
 export Reactor
 
 @inline function getrate(rxn::T,cs::Array{W,1},kfs::Array{Q,1},krevs::Array{Q,1}) where {T<:AbstractReaction,Q,W<:Real}

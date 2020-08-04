@@ -176,7 +176,6 @@ export getkfkrev
         krev = @fastmath kfs./getKcs(phase,T,Gs)
     elseif phase.diffusionlimited && !(kfs === nothing)
         len = length(phase.reactions)
-        kfs = zeros(typeof(N),len)
         krev = zeros(typeof(N),len)
         @simd for i = 1:len
            @fastmath @inbounds kfs[i],krev[i] = getkfkrev(phase.reactions[i],phase,T,P,C,N,ns,Gs,diffs,V;kf=kfs[i])

@@ -20,6 +20,7 @@ export AbstractVariableKDomain
 @with_kw mutable struct ConstantTPDomain{N<:AbstractPhase,S<:Integer,W<:Real, W2<:Real, I<:Integer, Q<:AbstractArray} <: AbstractConstantKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     T::W
     P::W
@@ -94,7 +95,7 @@ function ConstantTPDomain(;phase::E2,initialconds::Dict{X,X2},constantspecies::A
         jacobian=zeros(typeof(T),length(phase.species),length(phase.species))
     end
     rxnarray = getreactionindices(phase)
-    return ConstantTPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1),constspcinds,
+    return ConstantTPDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1],[1,length(phase.species)+length(phase.reactions)],constspcinds,
         T,P,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantTPDomain
@@ -102,6 +103,7 @@ export ConstantTPDomain
 @with_kw struct ConstantVDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     V::W
     rxnarray::Array{Int64,2}
@@ -158,7 +160,7 @@ function ConstantVDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arra
         jacobian=zeros(typeof(T),length(phase.species)+2,length(phase.species)+2)
     end
     rxnarray = getreactionindices(phase)
-    return ConstantVDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2),constspcinds,
+    return ConstantVDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     V,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantVDomain
@@ -166,6 +168,7 @@ export ConstantVDomain
 @with_kw struct ConstantPDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     P::W
     rxnarray::Array{Int64,2}
@@ -222,7 +225,7 @@ function ConstantPDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arra
         jacobian=zeros(typeof(T),length(phase.species)+2,length(phase.species)+2)
     end
     rxnarray = getreactionindices(phase)
-    return ConstantPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2),constspcinds,
+    return ConstantPDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     P,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantPDomain
@@ -230,6 +233,7 @@ export ConstantPDomain
 @with_kw struct ParametrizedTPDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     T::Function
     P::Function
@@ -299,7 +303,7 @@ function ParametrizedTPDomain(;phase::Z,initialconds::Dict{X,Any},constantspecie
         jacobian=zeros(typeof(V),length(phase.species)+1,length(phase.species)+1)
     end
     rxnarray = getreactionindices(phase)
-    return ParametrizedTPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end]+1),constspcinds,
+    return ParametrizedTPDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end]+1],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     Tfcn,Pfcn,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ParametrizedTPDomain
@@ -307,6 +311,7 @@ export ParametrizedTPDomain
 @with_kw struct ParametrizedVDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     V::Function
     rxnarray::Array{Int64,2}
@@ -372,7 +377,7 @@ function ParametrizedVDomain(;phase::Z,initialconds::Dict{X,Any},constantspecies
         jacobian=zeros(typeof(T),length(phase.species)+2,length(phase.species)+2)
     end
     rxnarray = getreactionindices(phase)
-    return ParametrizedVDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2),constspcinds,
+    return ParametrizedVDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     Vfcn,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ParametrizedVDomain
@@ -380,6 +385,7 @@ export ParametrizedVDomain
 @with_kw struct ParametrizedPDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     P::Function
     rxnarray::Array{Int64,2}
@@ -445,7 +451,7 @@ function ParametrizedPDomain(;phase::Z,initialconds::Dict{X,Any},constantspecies
         jacobian=zeros(typeof(T),length(phase.species)+2,length(phase.species)+2)
     end
     rxnarray = getreactionindices(phase)
-    return ParametrizedPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2),constspcinds,
+    return ParametrizedPDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1,phase.species[end].index+2],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     Pfcn,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ParametrizedPDomain
@@ -453,6 +459,7 @@ export ParametrizedPDomain
 @with_kw mutable struct ConstantTVDomain{N<:AbstractPhase,S<:Integer,W<:Real, W2<:Real, I<:Integer, Q<:AbstractArray} <: AbstractConstantKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     T::W
     V::W
@@ -523,7 +530,7 @@ function ConstantTVDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arr
         jacobian=zeros(typeof(T),length(phase.species),length(phase.species))
     end
     rxnarray = getreactionindices(phase)
-    return ConstantTVDomain(phase,SVector(phase.species[1].index,phase.species[end].index),constspcinds,
+    return ConstantTVDomain(phase,[phase.species[1].index,phase.species[end].index],[1,length(phase.species)+length(phase.reactions)],constspcinds,
         T,V,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantTVDomain
@@ -531,6 +538,7 @@ export ConstantTVDomain
 @with_kw struct ParametrizedTConstantVDomain{N<:AbstractPhase,S<:Integer,W<:Real,W2<:Real,Q<:AbstractArray} <: AbstractVariableKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     T::Function
     V::W
@@ -589,7 +597,7 @@ function ParametrizedTConstantVDomain(;phase::IdealDiluteSolution,initialconds::
         jacobian=zeros(typeof(V),length(phase.species)+1,length(phase.species)+1)
     end
     rxnarray = getreactionindices(phase)
-    return ParametrizedTConstantVDomain(phase,SVector(phase.species[1].index,phase.species[end].index),constspcinds,
+    return ParametrizedTConstantVDomain(phase,[phase.species[1].index,phase.species[end].index],[1,length(phase.species)+length(phase.reactions)],constspcinds,
     Tfcn,V,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ParametrizedTConstantVDomain
@@ -597,6 +605,7 @@ export ParametrizedTConstantVDomain
 @with_kw struct ConstantTADomain{N<:AbstractPhase,S<:Integer,W<:Real, W2<:Real, I<:Integer, Q<:AbstractArray} <: AbstractConstantKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
+    parameterindexes::Q
     constantspeciesinds::Array{S,1}
     T::W
     A::W
@@ -659,7 +668,7 @@ function ConstantTADomain(;phase::E2,initialconds::Dict{X,X2},constantspecies::A
         jacobian=zeros(typeof(T),length(phase.species),length(phase.species))
     end
     rxnarray = getreactionindices(phase)
-    return ConstantTADomain(phase,MVector(phase.species[1].index,phase.species[end].index),constspcinds,
+    return ConstantTADomain(phase,[phase.species[1].index,phase.species[end].index],[1,length(phase.species)+length(phase.reactions)],constspcinds,
         T,A,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,jacobian,sensitivity,MVector(false),MVector(0.0),stationary), y0, p
 end
 export ConstantTADomain

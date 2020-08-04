@@ -33,6 +33,7 @@ export AbstractVariableKDomain
     diffusivity::Array{W,1} = Array{Float64,1}()
     jacobian::Array{W,2} = Array{Float64,2}(undef,(0,0))
     sensitivity::Bool = false
+    alternativepformat::Bool=false
     jacuptodate::MArray{Tuple{1},Bool,1,1}=MVector(false)
     t::MArray{Tuple{1},W2,1,1}=MVector(0.0)
     p::Array{W,1}
@@ -96,7 +97,7 @@ function ConstantTPDomain(;phase::E2,initialconds::Dict{X,X2},constantspecies::A
     end
     rxnarray = getreactionindices(phase)
     return ConstantTPDomain(phase,[phase.species[1].index,phase.species[end].index,phase.species[end].index+1],[1,length(phase.species)+length(phase.reactions)],constspcinds,
-        T,P,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
+        T,P,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,false,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantTPDomain
 
@@ -472,6 +473,7 @@ export ParametrizedPDomain
     diffusivity::Array{W,1} = Array{Float64,1}()
     jacobian::Array{W,2} = Array{Float64,2}(undef,(0,0))
     sensitivity::Bool = false
+    alternativepformat::Bool=false
     jacuptodate::MArray{Tuple{1},Bool,1,1}=MVector(false)
     t::MArray{Tuple{1},W2,1,1}=MVector(0.0)
     p::Array{W,1}
@@ -531,7 +533,7 @@ function ConstantTVDomain(;phase::Z,initialconds::Dict{X,E},constantspecies::Arr
     end
     rxnarray = getreactionindices(phase)
     return ConstantTVDomain(phase,[phase.species[1].index,phase.species[end].index],[1,length(phase.species)+length(phase.reactions)],constspcinds,
-        T,V,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
+        T,V,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,diffs,jacobian,sensitivity,false,MVector(false),MVector(0.0),p), y0, p
 end
 export ConstantTVDomain
 
@@ -602,7 +604,7 @@ function ParametrizedTConstantVDomain(;phase::IdealDiluteSolution,initialconds::
 end
 export ParametrizedTConstantVDomain
 
-@with_kw struct ConstantTADomain{N<:AbstractPhase,S<:Integer,W<:Real, W2<:Real, I<:Integer, Q<:AbstractArray} <: AbstractConstantKDomain
+@with_kw mutable struct ConstantTADomain{N<:AbstractPhase,S<:Integer,W<:Real, W2<:Real, I<:Integer, Q<:AbstractArray} <: AbstractConstantKDomain
     phase::N
     indexes::Q #assumed to be in ascending order
     parameterindexes::Q
@@ -618,6 +620,7 @@ export ParametrizedTConstantVDomain
     diffusivity::Array{W,1} = Array{Float64,1}()
     jacobian::Array{W,2} = Array{Float64,2}(undef,(0,0))
     sensitivity::Bool = false
+    alternativepformat::Bool=false
     jacuptodate::MArray{Tuple{1},Bool,1,1}=MVector(false)
     t::MArray{Tuple{1},W2,1,1}=MVector(0.0)
     p::Array{W,1}
@@ -669,7 +672,7 @@ function ConstantTADomain(;phase::E2,initialconds::Dict{X,X2},constantspecies::A
     end
     rxnarray = getreactionindices(phase)
     return ConstantTADomain(phase,[phase.species[1].index,phase.species[end].index],[1,length(phase.species)+length(phase.reactions)],constspcinds,
-        T,A,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,jacobian,sensitivity,MVector(false),MVector(0.0),stationary), y0, p
+        T,A,kfs,krevs,efficiencyinds,Gs,rxnarray,mu,jacobian,sensitivity,false,MVector(false),MVector(0.0),stationary), y0, p
 end
 export ConstantTADomain
 

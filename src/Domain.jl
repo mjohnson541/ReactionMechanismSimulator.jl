@@ -1322,12 +1322,18 @@ end
     C = N/d.V
     P = 1.0e9
     @views nothermochg = d.Gs == p[1:length(d.phase.species)]
-    if nothermochg
-        return ns,cs,d.T,P,d.V,C,N,d.mu,p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)],d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+    @views nokfchg = d.kfsnondiff == p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)]
+    if nothermochg && nokfchg
+        return ns,cs,d.T,P,d.V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
+    elseif nothermochg
+        d.kfsnondiff = p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)]
+        d.krevsnondiff = @fastmath d.kfsnondiff./getKcs(d.phase,d.T,d.Gs)
+        d.kfs,d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfsnondiff)
     else
-        d.kfs = p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)]
+        d.kfsnondiff = p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)]
+        d.krevsnondiff = @fastmath d.kfsnondiff./getKcs(d.phase,d.T,d.Gs)
         d.Gs = p[1:length(d.phase.species)]
-        d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfs)[2]
+        d.kfs,d.krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=d.Gs,diffs=d.diffusivity,V=d.V,kfs=d.kfsnondiff)
         return ns,cs,d.T,P,d.V,C,N,d.mu,d.kfs,d.krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
     end
 end
@@ -1343,8 +1349,10 @@ end
     C = N/d.V
     P = 1.0e9
     Gs = p[1:length(d.phase.species)]
-    kfs = convert(typeof(y),p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)])
-    krevs = convert(typeof(y),getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfs)[2])
+    kfsnondiff = p[length(d.phase.species)+1:length(d.phase.species)+length(d.phase.reactions)]
+    kfs,krevs = getkfkrevs(;phase=d.phase,T=d.T,P=P,C=C,N=N,ns=ns,Gs=Gs,diffs=d.diffusivity,V=d.V,kfs=kfsnondiff)
+    kfs = convert(typeof(y),kfs)
+    krevs = convert(typeof(y),krevs)
     return ns,cs,d.T,P,d.V,C,N,d.mu,kfs,krevs,Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),Array{Float64,1}(),0.0
 end
 

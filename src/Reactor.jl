@@ -173,6 +173,56 @@ export addreactionratecontributions!
     calcdomainderivatives!(domain,dydt,interfaces;t=t,T=T,P=P,Us=Us,Hs=Hs,V=V,C=C,ns=ns,N=N,Cvave=Cvave)
     return dydt
 end
+@inline function dydtreactor!(dydt::RC,y::U,t::Z,domains::Q,interfaces::B;p::RV=DiffEqBase.NullParameters(),sensitivity::Bool=true) where {RC,RV,B<:AbstractArray,Z<:Real,U,J<:Integer,Q<:Tuple}    
+    cstot = zeros(length(y))
+    dydt .= 0.0
+    domain = domains[1]
+    ns,cs,T,P,V,C,N,mu,kfs,krevs,Hs,Us,Gs,diffs,Cvave = calcthermo(domain,y,t,p)
+    vns = Array{typeof(ns),1}(undef,length(domains))
+    vns[1] = ns
+    vcs = Array{typeof(cs),1}(undef,length(domains))
+    vcs[1] = cs
+    cstot[domain.indexes[1]:domain.indexes[2]] = cs
+    vT = Array{typeof(T),1}(undef,length(domains))
+    vT[1] = T
+    vP = Array{typeof(P),1}(undef,length(domains))
+    vP[1] = P
+    vV = Array{typeof(V),1}(undef,length(domains))
+    vV[1] = V
+    vC = Array{typeof(C),1}(undef,length(domains))
+    vC[1] = C
+    vN = Array{typeof(N),1}(undef,length(domains))
+    vN[1] = N
+    vmu = Array{typeof(mu),1}(undef,length(domains))
+    vmu[1] = mu
+    vkfs = Array{typeof(kfs),1}(undef,length(domains))
+    vkfs[1] = kfs
+    vkrevs = Array{typeof(krevs),1}(undef,length(domains))
+    vkrevs[1] = krevs
+    vHs = Array{typeof(Hs),1}(undef,length(domains))
+    vHs[1] = Hs
+    vUs = Array{typeof(Us),1}(undef,length(domains))
+    vUs[1] = Us
+    vGs = Array{typeof(Gs),1}(undef,length(domains))
+    vGs[1] = Gs
+    vdiffs = Array{typeof(diffs),1}(undef,length(domains))
+    vdiffs[1] = diffs
+    vCvave = Array{typeof(Cvave),1}(undef,length(domains))
+    vCvave[1] = Cvave
+    addreactionratecontributions!(dydt,domain.rxnarray,cstot,kfs,krevs)
+    @views dydt[domain.indexes[1]:domain.indexes[2]] .*= V
+    for (i,domain) in enumerate(@views domains[2:end])
+        k = i + 1
+        vns[k],vcs[k],vT[k],vP[k],vV[k],vC[k],vN[k],vmu[k],vkfs[k],vkrevs[k],vHs[k],vUs[k],vGs[k],vdiffs[k],vCvave[k] = calcthermo(domain,y,t,p)
+        cstot[domain.indexes[1]:domain.indexes[2]] = vcs[k]
+        addreactionratecontributions!(dydt,domain.rxnarray,cstot,vkfs[k],vkrevs[k])
+        @views dydt[domain.indexes[1]:domain.indexes[2]] .*= V
+    end
+    for (i,domain) in enumerate(domains)
+        calcdomainderivatives!(domain,dydt,interfaces;t=t,T=vT[i],P=vP[i],Us=vUs[i],Hs=vHs[i],V=vV[i],C=vC[i],ns=vns[i],N=vN[i],Cvave=vCvave[i])
+    end
+    return dydt
+end
 export dydtreactor!
 
 function jacobiany!(J::Q,y::U,p::W,t::Z,domain::V,interfaces::Q3,colorvec::Q2=nothing) where {Q3<:AbstractArray,Q2,Q<:AbstractArray,U<:AbstractArray,W,Z<:Real,V<:AbstractDomain}

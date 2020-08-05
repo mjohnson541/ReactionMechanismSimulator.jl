@@ -100,4 +100,34 @@ IDT = ts[argmax(diff([sol(t)[end] for t in ts]))] #Ignition Delay Time based on 
 @test IDT ≈ 0.07324954954380769 rtol=1e-5
 end;
 
+@testset "Multi-domain ConstantV and ConstantTP simulation" begin
+    phaseDict = readinput("../src/testing/superminimal.rms")
+    spcs = phaseDict["phase"]["Species"]
+    rxns = phaseDict["phase"]["Reactions"]
+    ig = IdealGas(spcs,rxns,name="phase")
+    
+    initialcondsTP = Dict(["T"=>1000.0,"P"=>10.0e5,"H2"=>0.67,"O2"=>0.33]) 
+    domainTP,y0TP,pTP = ConstantTPDomain(phase=ig,initialconds=initialcondsTP) #Define the domain (encodes how system thermodynamic properties calculated)
+    
+    reactTP = Reactor(domainTP,y0TP,(0.0,0.04);p=pTP) #Create the reactor object
+    solTP = solve(reactTP.ode,CVODE_BDF(),abstol=1e-16,reltol=1e-6); #solve the ode associated with the reactor
+    
+    initialcondsV = Dict(["T"=>1000.0,"P"=>10.0e5,"H2"=>0.67,"O2"=>0.33]) 
+    domainV,y0V,pV = ConstantTPDomain(phase=ig,initialconds=initialcondsV) #Define the domain (encodes how system thermodynamic properties calculated)
+    
+    reactV = Reactor(domainV,y0V,(0.0,0.04);p=pV) #Create the reactor object
+    solV = solve(reactV.ode,CVODE_BDF(),abstol=1e-16,reltol=1e-6); #solve the ode associated with the reactor
+    
+    initialcondsTP = Dict(["T"=>1000.0,"P"=>10.0e5,"H2"=>0.67,"O2"=>0.33]) 
+    domainTP,y0TP,pTP = ConstantTPDomain(phase=ig,initialconds=initialcondsTP) #Define the domain (encodes how system thermodynamic properties calculated)
+    initialcondsV = Dict(["T"=>1000.0,"P"=>10.0e5,"H2"=>0.67,"O2"=>0.33]) 
+    domainV,y0V,pV = ConstantTPDomain(phase=ig,initialconds=initialcondsV) #Define the domain (encodes how system thermodynamic properties calculated)
+    
+    react,y0,p = Reactor((domainTP,domainV),(y0TP,y0V),(0.0,0.04),[],(pTP,pV));
+    sol = solve(react.ode,CVODE_BDF(),abstol=1e-16,reltol=1e-6);
+    
+    t = 0.03
+    @test sol(t)[1:length(spcs)] ≈ solTP(t)[1:end-1] rtol=1e-5
+    @test sol(t)[length(spcs)+1:end-3] ≈ solV(t)[1:end-2] rtol=1e-5
+end;
 end;

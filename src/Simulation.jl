@@ -25,6 +25,17 @@ end
 
 export Simulation
 
+struct SystemSimulation{Q<:AbstractArray,B<:AbstractODESolution}
+    sol::B
+    sims::Q
+end
+
+function SystemSimulation(sol,domains)
+    sims = [Simulation(sol,domain) for domain in domains]
+    return SystemSimulation(sol,sims)
+end
+export SystemSimulation
+
 length(p::T) where {T<:AbstractSimulation} = 1
 export length
 

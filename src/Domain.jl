@@ -675,7 +675,7 @@ export ConstantTADomain
     end
     ns = y[d.indexes[1]:d.indexes[2]]
     N = sum(ns)
-    V = N*d.T*R/d.P
+    V = y[d.indexes[3]] 
     cs = ns./V
     C = N/V
     for ind in d.efficiencyinds #efficiency related rates may have changed

@@ -247,6 +247,15 @@ function jacobiany_ns!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,cs::Z1,kfs
     return jac
 end
 
+function jacobiany_therm!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,ind::I,x::F,colorvec::Q2=nothing) where {Q3<:AbstractArray,Q2,Q<:AbstractArray,U<:AbstractArray,W,Z<:Real,D<:AbstractDomain,I<:Int64,F<:Float64}
+    function _f(dy::X,x::T,y::Q,p::W,domain::D,interfaces::Q3,ind::T1) where {X,Q3<:AbstractArray,T<:Real,Q<:AbstractArray,D<:AbstractDomain,T1<:Integer,W}
+        v = [ i != ind ? convert(typeof(x),z) : x for (i,z) in enumerate(y)]
+        return dydtreactor!(dy,v,t,domain,interfaces;p=p,sensitivity=false)
+    end
+    f(dy::X,x::Y) where {Y<:Real,X} = _f(dy,x,y,p,domain,interfaces,ind)
+    jac[:,ind] = ForwardDiff.derivative(f,zeros(size(y)),x)
+end
+
 # function jacobianp!(d::W;cs::Q,V::Y,T::Y2,Us::Z3,Cvave::Z4,N::Z5,kfs::Z,krevs::X,wV::Q2,ratederiv::Q3) where {Q3,W<:Union{ConstantTPDomain,ConstantTVDomain},Z4<:Real,Z5<:Real,Z3<:AbstractArray,Q2<:AbstractArray,Q<:AbstractArray,Y2<:Real,Y<:Real,Z<:AbstractArray,X<:AbstractArray}
 #     Nspcs = length(cs)
 #     rxns = d.phase.reactions

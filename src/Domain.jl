@@ -299,7 +299,7 @@ function ParametrizedTPDomain(;phase::Z,initialconds::Dict{X,Any},constantspecie
         jacobian=zeros(typeof(V),length(phase.species)+1,length(phase.species)+1)
     end
     rxnarray = getreactionindices(phase)
-    return ParametrizedTPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end]+1),constspcinds,
+    return ParametrizedTPDomain(phase,SVector(phase.species[1].index,phase.species[end].index,phase.species[end].index+1),constspcinds,
     Tfcn,Pfcn,rxnarray,jacobian,sensitivity,MVector(false),MVector(0.0),p), y0, p
 end
 export ParametrizedTPDomain

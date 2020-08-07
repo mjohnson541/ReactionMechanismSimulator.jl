@@ -1599,6 +1599,49 @@ function jacobiany!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,colorvec::Q2=
     return jac
 end
 
+function jacobiany!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,colorvec::Q2=nothing) where {Q3<:AbstractArray,Q2,Q<:AbstractArray,U<:AbstractArray,W,Z<:Real,D<:ConstantVDomain}
+    ns,cs,T,P,V,C,N,mu,kfs,krevs,Hs,Us,Gs,diffs,Cvave = calcthermo(domain,y,t,p)
+    jacobiany_ns!(jac,y,p,t,domain,[],cs,kfs,krevs,nothing)
+    
+    cpdivR,hdivRT1,sdivR = calcHSCpdless(domain.phase.vecthermo,T)
+    
+    dydt = zeros(size(y))
+    dydtreactor!(dydt,y,t,domain,interfaces,;p=p,sensitivity=false)
+    
+    dCvavedn = zeros(domain.indexes[2]-domain.indexes[1]+1)
+    for i in domain.indexes[1]:domain.indexes[2]
+        dCvavedn[i] = cpdivR[i]*R/N - (Cvave+R)/N
+        jac[domain.indexes[3],i] = -dot(Us,jac[domain.indexes[1]:domain.indexes[2],i])/(N*Cvave)-dydt[domain.indexes[3]]*(1/N+dCvavedn[i]/Cvave)
+        jac[domain.indexes[4],i] = sum(jac[domain.indexes[1]:domain.indexes[2],i])*R*T/V + P/T*jac[domain.indexes[3],i]
+    end
+    
+    for inter in interfaces
+        if isa(inter,Inlet) && domain == inter.domain
+            flow = inter.F(t)
+            for i in domain.indexes[1]:domain.indexes[2]
+                dTdt = flow*(inter.H - dot(Us,ns)/N)/(N*Cvave)
+                ddnidTdt = flow*(-Us[i]/N + dot(Us,ns)/N^2)/(N*Cvave)-dTdt*(1/N+dCvavedn[i]/Cvave)
+                jac[domain.indexes[3],i] += ddnidTdt
+                jac[domain.indexes[4],i] += P/T*ddnidTdt
+            end
+        elseif isa(inter,Outlet) && domain == inter.domain
+            flow = inter.F(t)
+            jac[domain.indexes[1]:domain.indexes[2],domain.indexes[1]:domain.indexes[2]] .-= flow/N*Matrix(1.0I,domain.indexes[2]-domain.indexes[1]+1,domain.indexes[2]-domain.indexes[1]+1)
+            for i in domain:indexes[1]:domain.indexes[2]
+                jac[domain.indexes[1]:domain.indexes[2],i] .-= -flow*ns./N^2
+                dTdt = (P*V/N*flow)/(N*Cvave)
+                ddnidTdt = -dTdt*(2/N+dCvavedn[i]/Cvave)
+                jac[domain.indexes[3],i] -= ddnidTdt
+                jac[domain.indexes[4],i] -= P/T*ddnidTdt
+            end
+        end
+    end
+    
+    jacobiany_therm!(jac,y,p,t,domain,interfaces,domain.indexes[3],T,nothing)
+    jacobiany_therm!(jac,y,p,t,domain,interfaces,domain.indexes[4],P,nothing)
+
+    return jac
+end
 
 function getreactionindices(ig::Q) where {Q<:AbstractPhase}
     arr = zeros(Int64,(6,length(ig.reactions)))

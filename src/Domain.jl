@@ -1577,6 +1577,29 @@ end
 end
 export calcdomainderivatives!
 
+function jacobiany!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,colorvec::Q2=nothing) where {Q3<:AbstractArray,Q2,Q<:AbstractArray,U<:AbstractArray,W,Z<:Real,D<:ConstantTPDomain}
+    ns,cs,T,P,V,C,N,mu,kfs,krevs,Hs,Us,Gs,diffs,Cvave = calcthermo(domain,y,t,p)
+    jacobiany_ns!(jac,y,p,t,domain,[],cs,kfs,krevs,nothing)
+    for i in domain.indexes[1]:domain.indexes[2]
+        jac[domain.indexes[3],i] = sum(jac[domain.indexes[1]:domain.indexes[2],i])*R*T/P
+    end
+    
+    for inter in interfaces
+        if isa(inter,Outlet) && domain == inter.domain
+            flow = inter.F(t)
+            jac[domain.indexes[1]:domain.indexes[2],domain.indexes[1]:domain.indexes[2]] .-= flow/N*Matrix(1.0I,domain.indexes[2]-domain.indexes[1]+1,domain.indexes[2]-domain.indexes[1]+1)
+            for i in domain:indexes[1]:domain.indexes[2]
+                jac[domain.indexes[1]:domain.indexes[2],i] .-= -flow*ns./N^2
+            end
+        end
+    end
+    
+    jacobiany_therm!(jac,y,p,t,domain,interfaces,domain.indexes[3],V)
+
+    return jac
+end
+
+
 function getreactionindices(ig::Q) where {Q<:AbstractPhase}
     arr = zeros(Int64,(6,length(ig.reactions)))
     for (i,rxn) in enumerate(ig.reactions)

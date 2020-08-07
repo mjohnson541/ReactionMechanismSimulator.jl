@@ -1807,6 +1807,8 @@ function jacobiany!(jac::Q,y::U,p::W,t::Z,domain::D,interfaces::Q3,colorvec::Q2=
     return jac
 end
 
+export jacobiany!
+
 function getreactionindices(ig::Q) where {Q<:AbstractPhase}
     arr = zeros(Int64,(6,length(ig.reactions)))
     for (i,rxn) in enumerate(ig.reactions)
